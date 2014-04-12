@@ -1,0 +1,6 @@
+/*/cli-config.php
+/*/vendor
+/.vagrant
+/jackrabbit/jackrabbit
+/doctrine-dbal/phpcr.sqlite
+composer.lock

@@ -1,0 +1,12 @@
+- name: Configure Jackalope Doctrine DBAL
+  copy: src=cli-config-dbal.php dest=/vagrant/doctrine-dbal/cli-config.php
+
+- name: Configure Jackalope Jackrabbit
+  copy: src=cli-config-jackrabbit.php dest=/vagrant/jackrabbit/cli-config.php
+
+- name: Remove sqlite database (start fresh)
+  shell: rm -f /vagrant/doctrine-dbal/phpcr.sqlite
+
+- name: Init database
+  shell: chdir=/vagrant/doctrine-dbal vendor/bin/jackalope jackalope:init:dbal
+
