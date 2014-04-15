@@ -1,4 +1,13 @@
 ---
+- name: jackrabbit |  Checkout master
+  command: chdir=/vagrant git clone https://github.com/jackalope/jackalope-jackrabbit.git jackrabbit creates=/vagrant/jackrabbit
+
+- name: jackrabbit | Install Dependencies
+  shell: cd /vagrant/jackrabbit; composer install
+
+- name: jackrabbit | copy cli-config.php
+  copy: src=cli-config-jackrabbit.php dest=/vagrant/jackrabbit/cli-config.php
+
 # Credits to EmmanuelVella: https://github.com/M4nu/ansible/blob/c1bf576ccd118242a03986e3803b0dccfdeb2edb/jackrabbit/main.yml
 - name: jackrabbit | download and install
   file: path={{ base_dir }} state=directory owner=root group=root mode=0755

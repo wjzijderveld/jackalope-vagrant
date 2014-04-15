@@ -4,3 +4,6 @@
 /jackrabbit/jackrabbit
 /doctrine-dbal/phpcr.sqlite
 composer.lock
+/doctrine-dbal
+/jackrabbit
+/vendor

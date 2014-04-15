@@ -1,5 +1,0 @@
-{
-    "require": {
-        "jackalope/jackalope-jackrabbit": "dev-master"
-    }
-}

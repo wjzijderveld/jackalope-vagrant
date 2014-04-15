@@ -1,0 +1,90 @@
+#!/usr/bin/env php
+<?php
+
+use Symfony\Component\Console\Input\ArgvInput;
+use Symfony\Component\Console\Input\InputArgument;
+use Symfony\Component\Console\Input\InputDefinition;
+use Symfony\Component\Console\Output\ConsoleOutput;
+use Symfony\Component\Process\Process;
+
+require __DIR__ . '/../vendor/autoload.php';
+
+$inputDefinition = new InputDefinition(array(
+    new InputArgument('app', InputArgument::OPTIONAL, 'Which apps to run the tests for: dbal, jackrabbit or both', 'both'),
+));
+
+$input = new ArgvInput(null, $inputDefinition);
+$output = new ConsoleOutput();
+
+if (!is_dir('/vagrant')) {
+    $output->error('This script should only be run inside the Vagrant machine');
+    exit(1);
+}
+
+$app = $input->getArgument('app');
+
+if (!in_array($app, array('both', 'dbal', 'jackrabbit'))) {
+    $output->writeln('<error>Given parameter should be one of dbal, jackrabbit, both. ' . $app . ' given.</error>');
+    exit(1);
+}
+
+$processes = array();
+
+if (in_array($app, array('dbal', 'both'))) {
+    $process = new Process('cd /vagrant/doctrine-dbal; ~/.composer/vendor/bin/phpunit');
+    $processes['dbal'] = $process;
+}
+
+if (in_array($app, array('jackrabbit', 'both'))) {
+    $process = new Process('cd /vagrant/jackrabbit; ~/.composer/vendor/bin/phpunit');
+    $processes['jackrabbit'] = $process;
+}
+
+foreach ($processes as $name => $process) {
+    $process->start(function ($type, $processOutput) use ($output) {
+//        $output->write($processOutput);
+    });
+    $output->writeln('Started process ' . $name);
+}
+
+$progress = array();
+$startLogging = array();
+$log = array();
+do {
+    $running = false;
+    $output->write("\x0D");
+    foreach ($processes as $name => $process) {
+        $running = $running || $process->isRunning();
+        $matches = array();
+        $incOutput = $process->getIncrementalOutput();
+        if (preg_match('/\(\s*(\d+)%\)/', $incOutput, $matches)) {
+            $progress[$name] = $matches[1];
+        }
+
+        if (preg_match('/Time: (.*), Memory: (.*)/', $incOutput)) {
+            $startLogging[$name] = true;
+            $progress[$name] = '100';
+        }
+
+        if (isset($startLogging[$name]) && $startLogging[$name]) {
+            if (!isset($log[$name])) {
+                $log[$name] = '';
+            }
+
+            $log[$name] .= $incOutput;
+        }
+
+        if (preg_match('/FAILURES!/', $incOutput)) {
+            $output->write($log[$name] . PHP_EOL);
+        }
+    }
+
+    $output->write('Progress: ');
+    foreach (array_keys($processes) as $name) {
+        $value = isset($progress[$name]) ? $progress[$name] : 0;
+        $output->write($name . ': ' . str_pad($value, 3, ' ', STR_PAD_LEFT) . '%  ');
+    }
+
+    usleep(1500000);
+} while ($running);
+$output->write(PHP_EOL);
